@@ -1,7 +1,8 @@
-import React, {useEffect, useState} from 'react';
+import React, { useEffect, useState } from 'react';
 import PropTypes from 'prop-types';
-import {omit} from 'ramda';
+import { omit } from 'ramda';
 import classNames from 'classnames';
+import TextareaAutosize from 'react-textarea-autosize';
 
 /**
  * A basic HTML textarea for entering multiline text based on the corresponding
@@ -39,9 +40,31 @@ const Textarea = props => {
     spellcheck,
     tabIndex,
     tabindex,
+    rows,
+    minrows,
+    maxrows,
+    autosize,
+    resize,
+    style: styleProp,
     ...otherProps
   } = props;
+
   const [valueState, setValueState] = useState(value || '');
+
+  // Mininum/maximum number of rows ignored if `autosize` is not true or not set
+  const autosizeProps = autosize ? { maxrows, minrows } : {};
+
+  // Create a new style object, merging the existing style prop and the new style  
+  let style = { ...styleProp };  
+  
+  // If autsize is true, then set resize style to 'none'
+  if (autosize) {  
+    style.resize = 'none';  
+  }
+  // Else if resize prop is set, then add resize style to 'none' or 'auto'
+  else if (resize !== undefined) {  
+    style.resize = resize ? 'vertical' : 'none';
+  }
 
   useEffect(() => {
     if (value !== valueState) {
@@ -53,7 +76,7 @@ const Textarea = props => {
     const newValue = e.target.value;
     setValueState(newValue);
     if (!debounce && setProps) {
-      setProps({value: newValue});
+      setProps({ value: newValue });
     }
   };
 
@@ -101,7 +124,41 @@ const Textarea = props => {
     'form-control'
   );
 
-  return (
+  // Return textarea if autosize is false or not set, else TextareaAutosize
+  return autosize ? (
+    <TextareaAutosize
+      value={valueState}
+      className={classes}
+      onChange={onChange}
+      onBlur={onBlur}
+      onKeyPress={onKeyPress}
+      onClick={onClick}
+      autoFocus={autofocus || autoFocus}
+      maxLength={maxlength || maxLength}
+      minLength={minlength || minLength}
+      readOnly={readonly || readOnly}
+      accessKey={accesskey || accessKey}
+      contentEditable={contenteditable || contentEditable}
+      contextMenu={contextmenu || contextMenu}
+      spellCheck={spellcheck || spellCheck}
+      tabIndex={tabindex || tabIndex}
+      style={style}
+      {...autosizeProps}
+      {...omit(
+        [
+          'n_blur_timestamp',
+          'n_submit_timestamp',
+          'persistence',
+          'persistence_type',
+          'persisted_props'
+        ],
+        otherProps
+      )}
+      data-dash-is-loading={
+        (loading_state && loading_state.is_loading) || undefined
+      }
+    />
+  ) : (
     <textarea
       value={valueState}
       className={classes}
@@ -118,6 +175,8 @@ const Textarea = props => {
       contextMenu={contextmenu || contextMenu}
       spellCheck={spellcheck || spellCheck}
       tabIndex={tabindex || tabIndex}
+      style={style}
+      rows={rows}
       {...omit(
         [
           'n_blur_timestamp',
@@ -254,6 +313,26 @@ Textarea.propTypes = {
   rows: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
 
   /**
+   * Defines the minimum number of rows to show for autosizing textarea.
+   */
+  minrows: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+
+  /**
+   * Defines the maximum number of rows up to which the autosizing textarea can grow.
+   */
+  maxrows: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+
+  /** 
+   * Allows the textarea height to shrink/grow with its content.
+   */
+  autosize: PropTypes.bool,
+
+  /** 
+   * Allows the textarea height to be vertically resizable. If autosizing, height is not resizable.
+   */
+  resize: PropTypes.bool,
+
+  /**
    * Indicates whether the text should be wrapped.
    */
   wrap: PropTypes.string,
@@ -334,7 +413,7 @@ Textarea.propTypes = {
    * Indicates whether spell checking is allowed for the element.
    */
   spellcheck: PropTypes.oneOfType([
-    // enumerated property, not a boolean property: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/draggable
+    // enumerated property, not a boolean property: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/spellcheck
     PropTypes.oneOf(['true', 'false']),
     PropTypes.bool
   ]),
@@ -345,7 +424,7 @@ Textarea.propTypes = {
    * Indicates whether spell checking is allowed for the element.
    */
   spellCheck: PropTypes.oneOfType([
-    // enumerated property, not a boolean property: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/draggable
+    // enumerated property, not a boolean property: https://developer.mozilla.org/en-US/docs/Web/HTML/Global_attributes/spellcheck
     PropTypes.oneOf(['true', 'false']),
     PropTypes.bool
   ]),
